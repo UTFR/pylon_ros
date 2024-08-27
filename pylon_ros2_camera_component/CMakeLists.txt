@@ -59,6 +59,9 @@ find_package(diagnostic_updater REQUIRED)
 if(cv_bridge_VERSION VERSION_GREATER_EQUAL 3.3.0)
     add_compile_definitions(cv_bridge_HPP)
 endif()
+if(image_geometry_VERSION VERSION_GREATER_EQUAL 3.3.0)
+    add_compile_definitions(image_geometry_HPP)
+endif()
 
 set(PYLON_ROS2_CAMERA_DEPENDENCIES
 	pylon_ros2_camera_interfaces
