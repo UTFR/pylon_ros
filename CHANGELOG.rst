@@ -2,6 +2,10 @@
 Changelog for package pylon_ros2_camera
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+3.0.1 (2024-11-27)
+-------------------
+* Fixing bug related to ExposureTime variable name for USB/Dart camera
+
 3.0.0 (2024-10-25)
 -------------------
 * Removing image_common as a submodule.
