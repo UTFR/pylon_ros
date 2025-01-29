@@ -32,6 +32,7 @@
 
 //#include <functional>
 
+#include "encoding_conversions.hpp"
 #include "pylon_ros2_camera_node.hpp"
 
 
@@ -72,6 +73,15 @@ PylonROS2CameraNode::PylonROS2CameraNode(const rclcpp::NodeOptions& options)
   // initialize camera instance and start grabbing
   if (!this->init())
     return;
+
+  if (this->camera_info_manager_->isCalibrated())
+  {
+    RCLCPP_INFO(LOGGER, "Camera is calibrated");
+  }
+  else
+  {
+    RCLCPP_INFO(LOGGER, "Camera not calibrated");
+  }
 
   // starting spinning thread
   RCLCPP_INFO_STREAM(LOGGER, "Start image grabbing if node connects to topic with a spinning rate of: " << this->frameRate() << " Hz");
@@ -128,6 +138,20 @@ bool PylonROS2CameraNode::init()
     RCLCPP_ERROR(LOGGER, "Error when trying to init and register. Shutting down now.");
     rclcpp::shutdown();
     return false;
+  }
+
+  // set grabbed image conversion parameters
+  if (this->pylon_camera_->getChunkModeActive() == 1)
+  {
+    RCLCPP_INFO(LOGGER, "Activated chunk mode");
+    this->pylon_camera_->chunk_mode_active_ = true;
+  }
+  const std::string ros_enc = this->pylon_camera_->currentROSEncoding();
+  const std::string gen_api_encoding(this->pylon_camera_->currentBaslerEncoding());
+  if (encodingconversions::is_12_bit_ros_enc(ros_enc) && (gen_api_encoding == "BayerRG12" || gen_api_encoding == "BayerBG12" || gen_api_encoding == "BayerGB12" || gen_api_encoding == "BayerGR12" || gen_api_encoding == "Mono12"))
+  {
+    RCLCPP_INFO(LOGGER, "Activated bit shifting");
+    this->pylon_camera_->bit_shift_active_ = true;
   }
 
   // starting the grabbing procedure with the desired image-settings
@@ -888,44 +912,6 @@ bool PylonROS2CameraNode::startGrabbing()
 
 void PylonROS2CameraNode::spin()
 {
-  if (this->camera_info_manager_->isCalibrated())
-  {
-    RCLCPP_INFO_ONCE(LOGGER, "Camera is calibrated");
-  }
-  else
-  {
-    RCLCPP_INFO_ONCE(LOGGER, "Camera not calibrated");
-  }
-
-  if (this->pylon_camera_->isCamRemoved())
-  {
-    RCLCPP_ERROR(LOGGER, "Pylon camera has been removed, trying to reset");
-    
-    this->cm_status_.status_id = pylon_ros2_camera_interfaces::msg::ComponentStatus::ERROR;
-    this->cm_status_.status_msg = "Pylon camera has been removed, trying to reset";
-      
-    if (this->pylon_camera_parameter_set_.enable_status_publisher_)
-    {
-      this->component_status_pub_->publish(this->cm_status_);
-    }
-      
-    if (this->pylon_camera_ != nullptr)
-    {
-      this->pylon_camera_.reset();
-    }
-      
-    // Possible issue here: ROS2 does not allow to shutdown services
-    // Services are shutdown in the ROS 1 pylon version at this level
-    this->set_user_output_srvs_.clear();
-
-    rclcpp::Rate r(0.5);
-    r.sleep();
-
-    this->init();
-    
-    return;
-  }
-
   if (!this->pylon_camera_->isBlaze())
   {
     const bool any_subscriber = (this->img_raw_pub_.getNumSubscribers() != 0 || this->getNumSubscribersRectImagePub() != 0);
@@ -1014,14 +1000,6 @@ void PylonROS2CameraNode::spin()
     }
   }
 
-  // Check if the image encoding changed , then save the new image encoding and restart the image grabbing to fix the ros sensor message type issue.
-  if (this->pylon_camera_parameter_set_.imageEncoding() != this->pylon_camera_->currentROSEncoding()) 
-  {
-    this->pylon_camera_parameter_set_.setimageEncodingParam(*this, this->pylon_camera_->currentROSEncoding());
-    this->grabbingStopping();
-    this->grabbingStarting();
-  }
-  
   if (this->pylon_camera_parameter_set_.enable_status_publisher_)
   {
     this->component_status_pub_->publish(this->cm_status_);
