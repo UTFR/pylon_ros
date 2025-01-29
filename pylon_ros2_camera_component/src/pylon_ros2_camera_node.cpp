@@ -897,35 +897,6 @@ bool PylonROS2CameraNode::startGrabbing()
 
 void PylonROS2CameraNode::spin()
 {
-  if (this->pylon_camera_->isCamRemoved())
-  {
-    RCLCPP_ERROR(LOGGER, "Pylon camera has been removed, trying to reset");
-    
-    this->cm_status_.status_id = pylon_ros2_camera_interfaces::msg::ComponentStatus::ERROR;
-    this->cm_status_.status_msg = "Pylon camera has been removed, trying to reset";
-      
-    if (this->pylon_camera_parameter_set_.enable_status_publisher_)
-    {
-      this->component_status_pub_->publish(this->cm_status_);
-    }
-      
-    if (this->pylon_camera_ != nullptr)
-    {
-      this->pylon_camera_.reset();
-    }
-      
-    // Possible issue here: ROS2 does not allow to shutdown services
-    // Services are shutdown in the ROS 1 pylon version at this level
-    this->set_user_output_srvs_.clear();
-
-    rclcpp::Rate r(0.5);
-    r.sleep();
-
-    this->init();
-    
-    return;
-  }
-
   if (!this->pylon_camera_->isBlaze())
   {
     const bool any_subscriber = (this->img_raw_pub_.getNumSubscribers() != 0 || this->getNumSubscribersRectImagePub() != 0);
