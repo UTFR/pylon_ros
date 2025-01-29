@@ -1824,6 +1824,7 @@ protected:
   std::array<float, 256> brightness_exp_lut_{};
 
   bool is_sleeping_{false};
+  double next_spin_time_{0.0};
 
   // diagnostics
   diagnostic_updater::Updater diagnostics_updater_;

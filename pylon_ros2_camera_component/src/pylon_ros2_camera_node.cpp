@@ -74,9 +74,11 @@ PylonROS2CameraNode::PylonROS2CameraNode(const rclcpp::NodeOptions& options)
     return;
 
   // starting spinning thread
-  RCLCPP_INFO_STREAM(LOGGER, "Start image grabbing if node connects to topic with a spinning rate of: " << this->frameRate() << " Hz");
+  // it will check camera availability every 0.1 milliseconds
+  double spin_rate = 0.0001;
+  RCLCPP_INFO_STREAM(LOGGER, "Start image grabbing if node connects to topic with a frame rate of: " << this->frameRate() << " Hz");
   timer_ = this->create_wall_timer(
-            std::chrono::duration<double>(1. / this->frameRate()),
+            std::chrono::duration<double>(spin_rate),
             std::bind(&PylonROS2CameraNode::spin, this));
 }
 
@@ -888,6 +890,15 @@ bool PylonROS2CameraNode::startGrabbing()
 
 void PylonROS2CameraNode::spin()
 {
+  // Check if a new frame should be grabbed
+  // Grab the image at fixed system times, to allow a simple synchronization with other cameras
+  double now_time = rclcpp::Clock().now().seconds();
+  double frame_step = 1.0 / this->frameRate();
+  if (now_time < this->next_spin_time_){
+    return; 
+  }
+  this->next_spin_time_ = now_time - std::fmod(now_time, frame_step) + frame_step;
+
   if (this->camera_info_manager_->isCalibrated())
   {
     RCLCPP_INFO_ONCE(LOGGER, "Camera is calibrated");
