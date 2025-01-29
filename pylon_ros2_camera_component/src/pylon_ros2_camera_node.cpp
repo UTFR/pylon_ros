@@ -73,6 +73,15 @@ PylonROS2CameraNode::PylonROS2CameraNode(const rclcpp::NodeOptions& options)
   if (!this->init())
     return;
 
+  if (this->camera_info_manager_->isCalibrated())
+  {
+    RCLCPP_INFO(LOGGER, "Camera is calibrated");
+  }
+  else
+  {
+    RCLCPP_INFO(LOGGER, "Camera not calibrated");
+  }
+
   // starting spinning thread
   RCLCPP_INFO_STREAM(LOGGER, "Start image grabbing if node connects to topic with a spinning rate of: " << this->frameRate() << " Hz");
   timer_ = this->create_wall_timer(
@@ -888,15 +897,6 @@ bool PylonROS2CameraNode::startGrabbing()
 
 void PylonROS2CameraNode::spin()
 {
-  if (this->camera_info_manager_->isCalibrated())
-  {
-    RCLCPP_INFO_ONCE(LOGGER, "Camera is calibrated");
-  }
-  else
-  {
-    RCLCPP_INFO_ONCE(LOGGER, "Camera not calibrated");
-  }
-
   if (this->pylon_camera_->isCamRemoved())
   {
     RCLCPP_ERROR(LOGGER, "Pylon camera has been removed, trying to reset");
