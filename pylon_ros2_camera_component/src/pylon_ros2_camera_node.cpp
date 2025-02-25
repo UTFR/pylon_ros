@@ -74,12 +74,8 @@ PylonROS2CameraNode::PylonROS2CameraNode(const rclcpp::NodeOptions& options)
     return;
 
   // starting spinning thread
-  // it will check camera availability every 0.1 milliseconds
-  double spin_rate = 0.0001;
   RCLCPP_INFO_STREAM(LOGGER, "Start image grabbing if node connects to topic with a frame rate of: " << this->frameRate() << " Hz");
-  timer_ = this->create_wall_timer(
-            std::chrono::duration<double>(spin_rate),
-            std::bind(&PylonROS2CameraNode::spin, this));
+  this->spin_thread_ = std::thread(&PylonROS2CameraNode::spinLoop, this);
 }
 
 PylonROS2CameraNode::~PylonROS2CameraNode()
@@ -100,6 +96,30 @@ PylonROS2CameraNode::~PylonROS2CameraNode()
   {
     delete this->pinhole_model_;
     this->pinhole_model_ = nullptr;
+  }
+
+  this->keep_spinning_ = false;
+  if (this->spin_thread_.joinable()) {
+    this->spin_thread_.join();
+  }
+}
+
+void PylonROS2CameraNode::spinLoop()
+{
+  double frame_step = 1.0 / this->frameRate();
+  while (this->keep_spinning_ && rclcpp::ok())
+  {
+    // Wait for the next frame step at a fixed system time, 
+    // to allow a simple synchronization with other cameras
+    double now_time = rclcpp::Clock().now().seconds();
+    double tdiff = std::fmod(now_time, frame_step);
+    if (tdiff > 0){
+      double sleep_time = frame_step - tdiff;
+      std::this_thread::sleep_for(std::chrono::duration<double>(sleep_time));
+    }
+
+    // Grab an image
+    this->spin();
   }
 }
 
@@ -890,15 +910,6 @@ bool PylonROS2CameraNode::startGrabbing()
 
 void PylonROS2CameraNode::spin()
 {
-  // Check if a new frame should be grabbed
-  // Grab the image at fixed system times, to allow a simple synchronization with other cameras
-  double now_time = rclcpp::Clock().now().seconds();
-  double frame_step = 1.0 / this->frameRate();
-  if (now_time < this->next_spin_time_){
-    return; 
-  }
-  this->next_spin_time_ = now_time - std::fmod(now_time, frame_step) + frame_step;
-
   if (this->camera_info_manager_->isCalibrated())
   {
     RCLCPP_INFO_ONCE(LOGGER, "Camera is calibrated");
