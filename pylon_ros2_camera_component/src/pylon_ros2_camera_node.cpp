@@ -72,6 +72,7 @@ PylonROS2CameraNode::PylonROS2CameraNode(const rclcpp::NodeOptions& options)
   // initialize camera instance and start grabbing
   if (!this->init())
     return;
+  
 
   // starting spinning thread
   RCLCPP_INFO_STREAM(LOGGER, "Start image grabbing if node connects to topic with a spinning rate of: " << this->frameRate() << " Hz");
@@ -974,8 +975,45 @@ void PylonROS2CameraNode::spin()
         }
         else
         {
-          this->pinhole_model_->fromCameraInfo(this->camera_info_manager_->getCameraInfo());
-          this->pinhole_model_->rectifyImage(cv_img_raw->image, this->cv_bridge_img_rect_->image);
+
+
+
+
+          
+            cv::Size imageSize(1920, 1200);
+
+            // 1. hardcoded camera intrinsics
+            cv::Mat K = (cv::Mat_<double>(3, 3) <<
+                484.215, 0,       950.628,
+                0,       484.174, 587.001,
+                0,       0,       1);
+
+            cv::Mat D = (cv::Mat_<double>(1, 5) <<
+                -0.008885, -0.00041, -0.00196, 0.001645, 0);
+
+            // 2. identity rectification, same projection
+            cv::Mat R = cv::Mat::eye(3, 3, CV_64F);
+            cv::Mat P = K.clone();
+
+      
+            // 4. create maps
+            cv::Mat map1, map2;
+            cv::initUndistortRectifyMap(K, D, R, P, imageSize, CV_32FC2, map1, map2);
+
+            // std::cout << "[DEBUG] raw size: " << raw.size() << ", type: " << raw.type() << std::endl;
+            // std::cout << "[DEBUG] map1 size: " << map1.size() << ", type: " << map1.type() << std::endl;
+            // std::cout << "[DEBUG] map2 empty: " << std::boolalpha << map2.empty() << std::endl;
+
+            // 5. remap
+
+            // std::cout << "[INFO] rectified image created successfully.\n";
+
+
+
+
+              // this->map1, this->map2
+
+          cv::remap(cv_img_raw->image, this->cv_bridge_img_rect_->image, map1, cv::Mat(), cv::INTER_LINEAR);
           this->img_rect_pub_->publish(this->cv_bridge_img_rect_->toImageMsg());
         }
       }
