@@ -146,6 +146,13 @@ public:
    */
   const std::string& cameraFrame() const;
 
+  // GPT
+  void initCameraIntrinsics();
+
+  cv::Mat K;
+  cv::Mat D;
+  cv::Size imageSize;
+
 protected:
   
   /**

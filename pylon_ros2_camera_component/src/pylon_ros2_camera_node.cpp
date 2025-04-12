@@ -151,7 +151,24 @@ void PylonROS2CameraNode::initInterfaces()
   this->initActions();
 
   this->initDiagnostics();
+
+  this->initCameraIntrinsics();
 }
+
+//GPT
+void PylonROS2CameraNode::initCameraIntrinsics()
+{
+  K = (cv::Mat_<double>(3, 3) <<
+        484.215, 0,       950.628,
+        0,       484.174, 587.001,
+        0,       0,       1);
+
+  D = (cv::Mat_<double>(1, 5) <<
+        -0.008885, -0.00041, -0.00196, 0.001645, 0);
+
+  imageSize = cv::Size(1920, 1200);
+}
+
 
 void PylonROS2CameraNode::initPublishers()
 {
@@ -980,16 +997,16 @@ void PylonROS2CameraNode::spin()
 
 
           
-            cv::Size imageSize(1920, 1200);
+            // cv::Size imageSize(1920, 1200);
 
-            // 1. hardcoded camera intrinsics
-            cv::Mat K = (cv::Mat_<double>(3, 3) <<
-                484.215, 0,       950.628,
-                0,       484.174, 587.001,
-                0,       0,       1);
+            // // 1. hardcoded camera intrinsics
+            // cv::Mat K = (cv::Mat_<double>(3, 3) <<
+            //     484.215, 0,       950.628,
+            //     0,       484.174, 587.001,
+            //     0,       0,       1);
 
-            cv::Mat D = (cv::Mat_<double>(1, 5) <<
-                -0.008885, -0.00041, -0.00196, 0.001645, 0);
+            // cv::Mat D = (cv::Mat_<double>(1, 5) <<
+            //     -0.008885, -0.00041, -0.00196, 0.001645, 0);
 
             // 2. identity rectification, same projection
             cv::Mat R = cv::Mat::eye(3, 3, CV_64F);
