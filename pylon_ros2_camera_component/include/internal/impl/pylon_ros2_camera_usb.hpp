@@ -190,14 +190,81 @@ bool PylonROS2USBCamera::applyCamSpecificStartupSettings(const PylonROS2CameraPa
         }
         else if (parameters.startup_user_set_ == "UserSet1")
         {
-            cam_->UserSetSelector.SetValue(Basler_UniversalCameraParams::UserSetSelector_UserSet1);
-            cam_->UserSetLoad.Execute();
+            // this was default before:
+            // cam_->UserSetSelector.SetValue(Basler_UniversalCameraParams::UserSetSelector_UserSet1);
+            // cam_->UserSetLoad.Execute();
+
+            RCLCPP_INFO(LOGGER_USB, "going to set modes");
+            setTriggerActivation(1);
+            cam_->TriggerSource.SetValue(Basler_UniversalCameraParams::TriggerSource_Line1);
+            RCLCPP_WARN(LOGGER_USB, "Set line 1");
+            cam_->TriggerMode.SetValue(Basler_UniversalCameraParams::TriggerMode_On);
+            RCLCPP_INFO(LOGGER_USB, "Set trigger modes");
+            if (GenApi::IsAvailable(cam_->ExposureTimeAbs))
+            {
+                double upper_lim = std::min(parameters.auto_exposure_upper_limit_, cam_->ExposureTimeAbs.GetMax());
+                cam_->AutoExposureTimeAbsLowerLimit.SetValue(cam_->ExposureTimeAbs.GetMin());
+                cam_->AutoExposureTimeAbsUpperLimit.SetValue(upper_lim);
+                RCLCPP_INFO_STREAM(LOGGER_USB, "Cam has upper exposure value limit range: ["
+                    << cam_->ExposureTimeAbs.GetMin()
+                    << " - " << upper_lim << " (max possible value from cam is " << cam_->ExposureTimeAbs.GetMax() << ")"
+                    << "].");
+            }
+            else if (GenApi::IsAvailable(cam_->ExposureTime))
+            {
+                double upper_lim = std::min(parameters.auto_exposure_upper_limit_, cam_->ExposureTime.GetMax());
+                cam_->AutoExposureTimeLowerLimit.SetValue(cam_->ExposureTime.GetMin());
+                cam_->AutoExposureTimeUpperLimit.SetValue(upper_lim);
+                RCLCPP_INFO_STREAM(LOGGER_USB, "Cam has upper exposure value limit range: ["
+                    << cam_->ExposureTime.GetMin()
+                    << " - " << upper_lim << " (max possible value from cam is " << cam_->ExposureTime.GetMax() << ")"
+                    << "].");
+            }
+            else
+            {
+                RCLCPP_WARN_STREAM(LOGGER_USB, "Problem when trying to set the camera AutoExposure thresholds: Problem with variable ID.");
+            }
+                    
             RCLCPP_INFO(LOGGER_USB, "UserSet1 loaded");
         }
         else if (parameters.startup_user_set_ == "UserSet2")
         {
-            cam_->UserSetSelector.SetValue(Basler_UniversalCameraParams::UserSetSelector_UserSet2);
-            cam_->UserSetLoad.Execute();
+            // This was default before:
+            // cam_->UserSetSelector.SetValue(Basler_UniversalCameraParams::UserSetSelector_UserSet2);
+            // cam_->UserSetLoad.Execute();
+
+            // Added this to set to Line2
+            RCLCPP_INFO(LOGGER_USB, "going to set modes");
+            setTriggerActivation(1);
+            cam_->TriggerSource.SetValue(Basler_UniversalCameraParams::TriggerSource_Line2);
+            RCLCPP_WARN(LOGGER_USB, "Set line 2");
+            cam_->TriggerMode.SetValue(Basler_UniversalCameraParams::TriggerMode_On);
+            RCLCPP_INFO(LOGGER_USB, "Set trigger modes");
+            if (GenApi::IsAvailable(cam_->ExposureTimeAbs))
+            {
+                double upper_lim = std::min(parameters.auto_exposure_upper_limit_, cam_->ExposureTimeAbs.GetMax());
+                cam_->AutoExposureTimeAbsLowerLimit.SetValue(cam_->ExposureTimeAbs.GetMin());
+                cam_->AutoExposureTimeAbsUpperLimit.SetValue(upper_lim);
+                RCLCPP_INFO_STREAM(LOGGER_USB, "Cam has upper exposure value limit range: ["
+                    << cam_->ExposureTimeAbs.GetMin()
+                    << " - " << upper_lim << " (max possible value from cam is " << cam_->ExposureTimeAbs.GetMax() << ")"
+                    << "].");
+            }
+            else if (GenApi::IsAvailable(cam_->ExposureTime))
+            {
+                double upper_lim = std::min(parameters.auto_exposure_upper_limit_, cam_->ExposureTime.GetMax());
+                cam_->AutoExposureTimeLowerLimit.SetValue(cam_->ExposureTime.GetMin());
+                cam_->AutoExposureTimeUpperLimit.SetValue(upper_lim);
+                RCLCPP_INFO_STREAM(LOGGER_USB, "Cam has upper exposure value limit range: ["
+                    << cam_->ExposureTime.GetMin()
+                    << " - " << upper_lim << " (max possible value from cam is " << cam_->ExposureTime.GetMax() << ")"
+                    << "].");
+            }
+            else
+            {
+                RCLCPP_WARN_STREAM(LOGGER_USB, "Problem when trying to set the camera AutoExposure thresholds: Problem with variable ID.");
+            }
+
             RCLCPP_INFO(LOGGER_USB, "UserSet2 loaded");
         }
         else if (parameters.startup_user_set_ == "UserSet3")
@@ -213,6 +280,11 @@ bool PylonROS2USBCamera::applyCamSpecificStartupSettings(const PylonROS2CameraPa
             *    due to 50Hz lamps (-> 20ms cycle duration)
             *  - upper limit is to prevent motion blur
             */
+           
+            cam_->TriggerSource.SetValue(Basler_UniversalCameraParams::TriggerSource_Software);
+            cam_->TriggerMode.SetValue(Basler_UniversalCameraParams::TriggerMode_On);
+            RCLCPP_WARN(LOGGER_USB, "Set software trigger");
+            
             if (GenApi::IsAvailable(cam_->ExposureTimeAbs))
             {
                 double upper_lim = std::min(parameters.auto_exposure_upper_limit_, cam_->ExposureTimeAbs.GetMax());

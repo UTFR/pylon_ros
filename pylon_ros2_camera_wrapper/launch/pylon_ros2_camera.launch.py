@@ -27,7 +27,6 @@ def _launch_node(context: LaunchContext):
     config_file = LaunchConfiguration("config_file")
 
     mtu_size = LaunchConfiguration("mtu_size")
-    startup_user_set = LaunchConfiguration("startup_user_set")
     enable_status_publisher = LaunchConfiguration("enable_status_publisher")
     enable_current_params_publisher = LaunchConfiguration(
         "enable_current_params_publisher"
@@ -62,7 +61,6 @@ def _launch_node(context: LaunchContext):
                 config_file,
                 {
                     "gige/mtu_size": mtu_size,
-                    "startup_user_set": startup_user_set,
                     "enable_status_publisher": enable_status_publisher,
                     "enable_current_params_publisher": enable_current_params_publisher,
                 },
@@ -104,13 +102,6 @@ def generate_launch_description():
         description="Maximum transfer unit size. To enable jumbo frames, set it to a high value (8192 recommended)",
     )
 
-    declare_startup_user_set_cmd = DeclareLaunchArgument(
-        "startup_user_set",
-        # possible value: Default, UserSet1, UserSet2, UserSet3, CurrentSetting
-        default_value="CurrentSetting",
-        description="Specific user set defining user parameters to run the camera.",
-    )
-
     declare_enable_status_publisher_cmd = DeclareLaunchArgument(
         "enable_status_publisher",
         default_value="true",
@@ -137,7 +128,6 @@ def generate_launch_description():
 
     ld.add_action(declare_config_file_cmd)
     ld.add_action(declare_mtu_size_cmd)
-    ld.add_action(declare_startup_user_set_cmd)
     ld.add_action(declare_enable_status_publisher_cmd)
     ld.add_action(declare_enable_current_params_publisher_cmd)
 

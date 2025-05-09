@@ -37,7 +37,7 @@
     #  The desired publisher frame rate if listening to the topics.
     #  This parameter can only be set once at startup
     #  Calling the GrabImages-Action can result in a higher framerate
-    frame_rate: 30.0
+    frame_rate: 10.0
 
     #  Mode of camera's shutter.
     #  The supported modes are "rolling", "global" and "global_reset"
@@ -55,9 +55,10 @@
     ##########################################################################
 
     #  The exposure time in microseconds to be set after opening the camera.
-    exposure: 2500.0
+    # exposure: 10000.0
     # exposure: 400.0
-
+    # exposure_auto: True
+    # gain_auto: True
     #  The target gain in percent of the maximal value the camera supports
     #  For USB cameras, the gain is in dB, for GigE cameras it is given in so
     #  called 'device specific units'.
@@ -77,7 +78,7 @@
     #  try to reach the desired brightness by only varying the exposure time. If
     #  gain AND exposure are given, it is not possible to reach the brightness,
     #  because both are assumed to be fix.
-    # brightness: 100
+    brightness: 50
 
     #  Only relevant, if 'brightness' is set:
     #  The brightness_continuous flag controls the auto brightness function.
@@ -87,7 +88,7 @@
     #  trying to adapt to changing light conditions. This is only possible for
     #  values in the possible auto range of the pylon API which is e.g., [50 - 205]
     #  for acA2500-14um and acA1920-40gm
-    # brightness_continuous: true
+    brightness_continuous: true
 
     #  Only relevant, if 'brigchtness' is set:
     #  If the camera should try to reach and / or keep the brightness, hence
@@ -99,41 +100,27 @@
     #  reached by adapting the exposure time.
     #  The gain_auto flag indicates, that the desired brightness will be
     #  reached by adapting the gain.
-    # exposure_auto: true
-    # gain_auto: true
+    exposure_auto: true
+    gain_auto: true
 
     ##########################################################################
+    # This is to set which user settings we want to use. These are current differences:
+    # - "CurrentSetting" : software trigger
+    # - "UserSet1" : hardware trigger - Line 1
+    # - "UserSet2" : hardware trigger - Line 2
+    startup_user_set: "CurrentSetting"
+
+    # Timeout between frame grabs in ms
+    grab_timeout: 5000
+    # Trigger timeout in ms
+    trigger_timeout: 5000
 
     #  The timeout while searching the exposure which is connected to the
     #  desired brightness. For slow system this has to be increased.
-    # exposure_search_timeout: 5.0
+    exposure_search_timeout: 5.0
 
     #  The exposure search can be limited with an upper bound. This is to prevent
     #  very high exposure times and resulting timeouts.
     #  A typical value for this upper bound is ~2000000us.
     #  Beware that this upper limit is only set if `startup_user_set` is set to `Default`.
-    # auto_exposure_upper_limit: 2000000.0
-
-    #  The MTU size. Only used for GigE cameras.
-    #  To prevent lost frames configure the camera has to be configured
-    #  with the MTU size the nectwork card supports. A value greater 3000
-    #  should be good (1500 for single-board computer)
-    # gige:
-    #  mtu_size: 3000
-
-    #  Only used for GigE cameras.
-    #  The inter-package delay in ticks to prevent lost frames.
-    #  For most of GigE cameras, a value of 1000 is reasonable.
-    #  For cameras used on a single-board computer this value should be set to 11772.
-    # gige:
-    #  inter_pkg_delay: 1000cros2 launch pylon_ros2_camera_wrapper pylon_ros2_camera.launch.py
-
-    #  Only used for GigE cameras.
-    #  The frame transmission delay in ticks.
-    #  In most cases, this parameter should be set to 0.
-    #  However, if your network hardware can't handle spikes in network traffic
-    #  (e.g., if you are triggering multiple camera simultaneously),
-    #  you can use the frame transmission delay parameter to stagger the
-    #  start of image data transmissions from each camera.
-    # gige:
-    #  frame_transmission_delay: 0
+    auto_exposure_upper_limit: 10000.0

@@ -392,7 +392,7 @@ bool PylonROS2CameraImpl<CameraTraitT>::startGrabbing(const PylonROS2CameraParam
         img_size_byte_ =  img_cols_ * img_rows_ * imagePixelDepth();
 
         //grab_timeout_ = exposureTime().GetMax() * 1.05;
-        grab_timeout_ = parameters.grab_timeout_; // grab timeout = 500 ms
+        grab_timeout_ = parameters.grab_timeout_;
         trigger_timeout_ = parameters.trigger_timeout_;
 
         // grab one image to be sure, that the communication is successful
