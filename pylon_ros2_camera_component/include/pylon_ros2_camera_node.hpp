@@ -78,6 +78,13 @@
 #include <image_geometry/pinhole_camera_model.h>
 
 #include <cv_bridge/cv_bridge.h>
+// ── CUDA headers only if they exist ─────────────────────────────
+#if __has_include(<opencv2/cudawarping.hpp>)
+  #define PYLON_HAS_OPENCV_CUDA 1
+  #include <opencv2/cudawarping.hpp>   // pulls in core/cuda.hpp too
+#else
+  #define PYLON_HAS_OPENCV_CUDA 0
+#endif
 
 #include <image_transport/image_transport.hpp>
 #include <image_transport/camera_publisher.hpp>
@@ -158,6 +165,10 @@ namespace pylon_ros2_camera
          * @brief initialize the camera parameters and rectification maps
          */
         void buildRectMaps(const sensor_msgs::msg::CameraInfo &info, const cv::Size &img_size);
+
+        void detectCuda();
+
+        void uploadCudaMaps();
 
         /**
          * @brief initialize the node publishers
@@ -1639,10 +1650,16 @@ namespace pylon_ros2_camera
         bool isSleeping();
 
     protected:
-        // undistort rectify maps
-        cv::Mat map1_, map2_; // pre-computed rectification maps
-        bool maps_ready_ = false;
+        // ── rectification maps (CPU) ──────────────────────────────
+        cv::Mat map1_, map2_;
+        bool    maps_ready_{false};
 
+        // ── CUDA support (new) ────────────────────────────────────
+        bool    use_cuda_{false};                // true ⇢ GPU path active
+
+        #if PYLON_HAS_OPENCV_CUDA
+            cv::cuda::GpuMat d_map1_, d_map2_;
+        #endif
 
         // camera
         std::unique_ptr<PylonROS2Camera> pylon_camera_;

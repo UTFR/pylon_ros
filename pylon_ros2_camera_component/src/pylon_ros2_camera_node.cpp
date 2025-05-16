@@ -128,13 +128,13 @@ namespace pylon_ros2_camera
         return true;
     }
 
-    // ── PylonROS2CameraNode.cpp  (was: initInterfaces) ─────────────────────────
     void PylonROS2CameraNode::initInterfaces()
     {
         initPublishers();
         initServices();
         initActions();
         initDiagnostics();
+        detectCuda();
     }
 
     void PylonROS2CameraNode::buildRectMaps(const sensor_msgs::msg::CameraInfo &info,
@@ -157,6 +157,32 @@ namespace pylon_ros2_camera
             map1_, map2_);
 
         maps_ready_ = true;
+
+        uploadCudaMaps(); // upload maps to GPU if CUDA is available
+    }
+
+    void PylonROS2CameraNode::detectCuda()
+    {
+    #if PYLON_HAS_OPENCV_CUDA
+        if (cv::cuda::getCudaEnabledDeviceCount() > 0 &&
+            cv::cuda::DeviceInfo(0).isCompatible())
+        {
+            RCLCPP_INFO(LOGGER, "CUDA-capable GPU detected");
+            use_cuda_ = true;
+        }
+    #else
+        (void)use_cuda_;   // suppress unused-variable warning
+    #endif
+    }
+
+    void PylonROS2CameraNode::uploadCudaMaps()
+    {
+    #if PYLON_HAS_OPENCV_CUDA
+        if (use_cuda_) {
+            d_map1_.upload(map1_);
+            d_map2_.upload(map2_);
+        }
+    #endif
     }
 
     void PylonROS2CameraNode::initPublishers()
@@ -986,17 +1012,28 @@ namespace pylon_ros2_camera
                     }
                     else
                     {
-                        // // build maps the first time we see a frame
-                        if (!maps_ready_)
-                        {
+                        if (!maps_ready_) {
                             buildRectMaps(camera_info_manager_->getCameraInfo(),
-                                          {cv_img_raw->image.cols, cv_img_raw->image.rows});
+                                        {cv_img_raw->image.cols, cv_img_raw->image.rows});
                         }
 
-                        cv::remap(cv_img_raw->image,
-                                  cv_bridge_img_rect_->image,
-                                  map1_, map2_,
-                                  cv::INTER_LINEAR);
+                        #if PYLON_HAS_OPENCV_CUDA
+                        if (use_cuda_)                       // ── fast GPU branch
+                        {
+                            cv::cuda::GpuMat d_src, d_dst;
+                            d_src.upload(cv_img_raw->image);
+
+                            cv::cuda::remap(d_src, d_dst, d_map1_, d_map2_, cv::INTER_LINEAR);
+                            d_dst.download(cv_bridge_img_rect_->image);
+                        }
+                        else                                  // ── fallback CPU branch
+                        #endif
+                        {
+                            cv::remap(cv_img_raw->image,
+                                    cv_bridge_img_rect_->image,
+                                    map1_, map2_,
+                                    cv::INTER_LINEAR);
+                        }
 
                         img_rect_pub_->publish(cv_bridge_img_rect_->toImageMsg());
                     }
