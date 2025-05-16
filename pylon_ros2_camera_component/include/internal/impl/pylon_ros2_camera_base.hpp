@@ -40,6 +40,10 @@
 #include <pylon/StringParameter.h>
 #include <pylon/BaslerUniversalInstantCamera.h>
 
+#if defined(GENICAM_NAMESPACE) && !defined(UTFR_GENICAM_ALIAS)
+namespace GenICam_3_1_Basler_pylon = GENICAM_NAMESPACE;
+#define UTFR_GENICAM_ALIAS
+#endif
 
 namespace pylon_ros2_camera
 {
