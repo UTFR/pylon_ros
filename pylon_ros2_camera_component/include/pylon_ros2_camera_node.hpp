@@ -80,10 +80,10 @@
 #include <cv_bridge/cv_bridge.h>
 // ── CUDA headers only if they exist ─────────────────────────────
 #if __has_include(<opencv2/cudawarping.hpp>)
-  #define PYLON_HAS_OPENCV_CUDA 1
-  #include <opencv2/cudawarping.hpp>   // pulls in core/cuda.hpp too
+#define PYLON_HAS_OPENCV_CUDA 1
+#include <opencv2/cudawarping.hpp> // pulls in core/cuda.hpp too
 #else
-  #define PYLON_HAS_OPENCV_CUDA 0
+#define PYLON_HAS_OPENCV_CUDA 0
 #endif
 
 #include <image_transport/image_transport.hpp>
@@ -1652,14 +1652,14 @@ namespace pylon_ros2_camera
     protected:
         // ── rectification maps (CPU) ──────────────────────────────
         cv::Mat map1_, map2_;
-        bool    maps_ready_{false};
+        bool maps_ready_{false};
 
         // ── CUDA support (new) ────────────────────────────────────
-        bool    use_cuda_{false};                // true ⇢ GPU path active
+        bool use_cuda_{false}; // true ⇢ GPU path active
 
-        #if PYLON_HAS_OPENCV_CUDA
-            cv::cuda::GpuMat d_map1_, d_map2_;
-        #endif
+#if PYLON_HAS_OPENCV_CUDA
+        cv::cuda::GpuMat d_map1_, d_map2_;
+#endif
 
         // camera
         std::unique_ptr<PylonROS2Camera> pylon_camera_;
