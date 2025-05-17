@@ -140,7 +140,7 @@ namespace pylon_ros2_camera
     void PylonROS2CameraNode::buildRectMaps(const sensor_msgs::msg::CameraInfo &info,
                                             const cv::Size &img_size)
     {
-        // deep-copy CameraInfo into OpenCV matrices
+        // Deep-copy CameraInfo into OpenCV matrices
         cv::Mat K(3, 3, CV_64F, (void *)info.k.data());
         K = K.clone();
         cv::Mat D(info.d.size(), 1, CV_64F, (void *)info.d.data());
@@ -150,15 +150,22 @@ namespace pylon_ros2_camera
         cv::Mat P(3, 4, CV_64F, (void *)info.p.data());
         P = P.clone();
 
-        cv::initUndistortRectifyMap(
-            K, D, R, P,
-            img_size,
-            CV_16SC2, // compact & fast integer map
-            map1_, map2_);
+#if PYLON_HAS_OPENCV_CUDA
+        if (use_cuda_)
+        {
+            // For CUDA: separate 32F maps
+            cv::Mat map1_f32, map2_f32;
+            cv::initUndistortRectifyMap(K, D, R, P, img_size, CV_32FC1, map1_f32, map2_f32);
+            d_map1_.upload(map1_f32);
+            d_map2_.upload(map2_f32);
+            maps_ready_ = true;
+            return;
+        }
+#endif
 
+        // Fallback: CPU-compatible packed maps
+        cv::initUndistortRectifyMap(K, D, R, P, img_size, CV_16SC2, map1_, map2_);
         maps_ready_ = true;
-
-        uploadCudaMaps(); // upload maps to GPU if CUDA is available
     }
 
     void PylonROS2CameraNode::detectCuda()
@@ -1022,19 +1029,17 @@ namespace pylon_ros2_camera
 #if PYLON_HAS_OPENCV_CUDA
                         if (use_cuda_) // ── fast GPU branch
                         {
-                            cv::cuda::GpuMat d_src, d_dst;
-                            d_src.upload(cv_img_raw->image);
-
-                            cv::cuda::remap(d_src, d_dst, d_map1_, d_map2_, cv::INTER_LINEAR);
-                            d_dst.download(cv_bridge_img_rect_->image);
+                            cv::cuda::GpuMat d_src(cv_img_raw->image);
+                            cv::cuda::GpuMat d_dst;
+                            cv::cuda::remap(d_src, d_dst, d_map1_, d_map2_,
+                                            cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+                            d_dst.download(this->cv_bridge_img_rect_->image);
                         }
                         else // ── fallback CPU branch
 #endif
                         {
-                            cv::remap(cv_img_raw->image,
-                                      cv_bridge_img_rect_->image,
-                                      map1_, map2_,
-                                      cv::INTER_LINEAR);
+                            cv::remap(cv_img_raw->image, this->cv_bridge_img_rect_->image,
+                                      map1_, map2_, cv::INTER_LINEAR, cv::BORDER_CONSTANT);
                         }
 
                         img_rect_pub_->publish(cv_bridge_img_rect_->toImageMsg());
