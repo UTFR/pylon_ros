@@ -34,8 +34,9 @@ def _launch_node(context: LaunchContext):
     )
 
     respawn = LaunchConfiguration("respawn")
-    respawn_str = respawn.perform(context)
-    respawn_bool = respawn_str.lower() == "true"
+    respawn_delay  = LaunchConfiguration("respawn_delay")
+    respawn_bool   = respawn.perform(context).lower() == "true"
+    delay_float    = float(respawn_delay.perform(context))
 
     # log format
     os.environ["RCUTILS_CONSOLE_OUTPUT_FORMAT"] = (
@@ -46,6 +47,8 @@ def _launch_node(context: LaunchContext):
     if debug:
         launch_prefix = ["xterm -e gdb -ex run --args"]
     else:
+        # Uncomment next line if you want to keep the camera on CPU 1 at nice -5
+        # launch_prefix = ['taskset', '-c', '1', 'nice', '-n', '-5']
         launch_prefix = ""
 
     return [
@@ -56,6 +59,7 @@ def _launch_node(context: LaunchContext):
             name=node_name,
             output="screen",
             respawn=respawn_bool,
+            respawn_delay=delay_float,
             emulate_tty=True,
             prefix=launch_prefix,
             parameters=[
